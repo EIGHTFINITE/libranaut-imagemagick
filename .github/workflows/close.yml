@@ -1,0 +1,12 @@
+name: "Close"
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: peter-evans/close-fork-pulls@v4.0.0
+      continue-on-error: true

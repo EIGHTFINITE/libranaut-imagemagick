@@ -1,0 +1,3 @@
+* text=false
+/.gitattributes text working-tree-encoding=UTF-8 eol=lf
+/.github/*.yml text working-tree-encoding=UTF-8 eol=lf

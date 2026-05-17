@@ -1,0 +1,45 @@
+name: 'ImageMagick'
+
+on:
+  workflow_dispatch:
+    inputs:
+      fileid:
+        description: 'File ID'
+        type: number
+        required: true
+      filetype:
+        description: 'Filetype'
+        type: string
+        required: true
+
+jobs:
+  imagemagick:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y imagemagick
+    - name: Download
+      shell: bash
+      run: |
+        libranaut_full_id=$(printf '%07d' '${{ inputs.fileid }}')
+        libranaut_dir_id=${libranaut_full_id::-3}
+        libranaut_file_id=${libranaut_full_id: -3}
+        libranaut_in_file=orig.${{ inputs.filetype }}
+        curl -sSo $libranaut_in_file "${{ secrets.WORKFLOW_DOWNLOAD }}$libranaut_dir_id/$libranaut_file_id/$libranaut_in_file"
+        echo "libranaut_in_file=$libranaut_in_file" >> $GITHUB_ENV
+    - name: Process
+      shell: bash
+      run: |
+        identify -quiet -format '%wx%h' '${{ env.libranaut_in_file }}'[0] > res.txt
+        convert '${{ env.libranaut_in_file }}'[0] -quiet -auto-orient -thumbnail 500x500 -background none -gravity center -extent 500x500 -quality 90 500.webp
+        convert '${{ env.libranaut_in_file }}'[0] -quiet -auto-orient -thumbnail 300x300 -background none -gravity center -extent 300x300 -quality 90 300.webp
+        convert '${{ env.libranaut_in_file }}'[0] -quiet -auto-orient -thumbnail 200x200 -background none -gravity center -extent 200x200 -quality 90 200.webp
+        convert '${{ env.libranaut_in_file }}'[0] -quiet -auto-orient -thumbnail 48x48 -background none -gravity center -extent 48x48 -quality 90 48.webp
+        convert '${{ env.libranaut_in_file }}'[0] -quiet -auto-orient -thumbnail 24x24 -background none -gravity center -extent 24x24 -quality 90 24.webp
+    - name: Upload
+      shell: bash
+      run: |
+        curl -sS -X POST -H "Content-Type: multipart/form-data" -F "img500=@500.webp" -F "img300=@300.webp" -F "img200=@200.webp" -F "img48=@48.webp" -F "img24=@24.webp" -F "res=@res.txt" "${{ secrets.WORKFLOW_UPLOAD }}${{ inputs.fileid }}"
